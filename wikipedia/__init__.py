@@ -1,18 +1,14 @@
 # -*- coding: utf-8 -*-
 
-"""Search Wikipedia articles.
-
-Synopsis: <trigger> <filter>"""
-
 #  Copyright (c) 2022-2023 Manuel Schneider
 
 from albert import *
 from locale import getdefaultlocale
+from socket import timeout
+from time import sleep
 from urllib import request, parse
 import json
-import time
 import os
-from socket import timeout
 
 md_iid = "0.5"
 md_version = "1.5"
@@ -31,7 +27,7 @@ class Plugin(QueryHandler):
     limit = 20
 
     def id(self):
-        return __name__
+        return md_id
 
     def name(self):
         return md_name
@@ -71,9 +67,10 @@ class Plugin(QueryHandler):
         stripped = query.string.strip()
         if stripped:
             # avoid rate limiting
-            time.sleep(0.1)
-            if not query.isValid:
-                return
+            for number in range(50):
+                sleep(0.01)
+                if not query.isValid:
+                    return
 
             results = []
 
@@ -95,19 +92,18 @@ class Plugin(QueryHandler):
                     summary = data[2][i]
                     url = data[3][i]
 
-                    results.append(Item(id="wiki",
+                    results.append(Item(id=md_id,
                                         text=title,
                                         subtext=summary if summary else url,
-                                        completion=title,
                                         icon=[self.iconPath],
                                         actions=[
                                             Action("open", "Open article on Wikipedia", lambda u=url: openUrl(u)),
-                                            Action("copy", "Copy URL to clipboard", lambda u=url: setClipBoardText(u))
+                                            Action("copy", "Copy URL to clipboard", lambda u=url: setClipboardText(u))
                                         ]))
 
             query.add(results)
         else:
-            query.add(Item(id="wiki",
+            query.add(Item(id=md_id,
                            text=md_name,
                            subtext="Enter a query to search on Wikipedia",
                            icon=[self.iconPath]))
